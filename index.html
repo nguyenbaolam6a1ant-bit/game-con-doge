@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>H?ng Xu - Game</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    text-align: center;
+    overflow: hidden;
+}
+
+h1 {
+    margin: 15px 0 5px;
+}
+
+#info {
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+#game {
+    position: relative;
+    width: 90vw;
+    max-width: 600px;
+    height: 70vh;
+    max-height: 650px;
+    min-height: 400px;
+    margin: auto;
+    background: linear-gradient(#081b33, #12395c);
+    border: 4px solid white;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+#player {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    width: 80px;
+    height: 35px;
+    transform: translateX(-50%);
+    background: #ffcc00;
+    border-radius: 10px 10px 20px 20px;
+    box-shadow: 0 0 15px #ffcc00;
+}
+
+.coin {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background: gold;
+    border: 3px solid #fff2a8;
+    border-radius: 50%;
+    color: #8a5a00;
+    font-weight: bold;
+    line-height: 24px;
+}
+
+#startScreen,
+#gameOver {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+#gameOver {
+    display: none;
+}
+
+button {
+    padding: 14px 30px;
+    font-size: 20px;
+    border: none;
+    border-radius: 10px;
+    background: #00d084;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #00a968;
+}
+
+#controls {
+    margin-top: 10px;
+}
+
+.controlBtn {
+    width: 65px;
+    height: 50px;
+    margin: 5px;
+    padding: 0;
+    font-size: 25px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>?? H?NG XU</h1>
+
+<div id="info">
+    Ði?m: <span id="score">0</span>
+    &nbsp; | &nbsp;
+    M?ng: <span id="lives">3</span>
+</div>
+
+<div id="game">
+
+    <div id="startScreen">
+        <h2>?? H?NG XU</h2>
+        <p>Di chuy?n d? h?ng th?t nhi?u xu!</p>
+        <button id="startBtn">B?T Ð?U</button>
+    </div>
+
+    <div id="gameOver">
+        <h2>?? GAME OVER</h2>
+        <p>Ði?m c?a b?n: <span id="finalScore">0</span></p>
+        <button id="restartBtn">CHOI L?I</button>
+    </div>
+
+    <div id="player"></div>
+</div>
+
+<div id="controls">
+    <button class="controlBtn" id="leftBtn">??</button>
+    <button class="controlBtn" id="rightBtn">??</button>
+</div>
+
+<script>
+const game = document.getElementById("game");
+const player = document.getElementById("player");
+
+const scoreText = document.getElementById("score");
+const livesText = document.getElementById("lives");
+
+const startScreen = document.getElementById("startScreen");
+const gameOver = document.getElementById("gameOver");
+
+const finalScore = document.getElementById("finalScore");
+
+const startBtn = document.getElementById("startBtn");
+const restartBtn = document.getElementById("restartBtn");
+
+const leftBtn = document.getElementById("leftBtn");
+const rightBtn = document.getElementById("rightBtn");
+
+let score = 0;
+let lives = 3;
+
+let playerX = 0;
+
+let gameRunning = false;
+
+let coins = [];
+
+let coinTimer = null;
+let gameLoop = null;
+
+let speed = 3;
+
+const keys = {
+    left: false,
+    right: false
+};
+
+
+// ===========================
+// B?T Ð?U GAME
+// ===========================
+
+function startGame() {
+
+    score = 0;
+    lives = 3;
+    speed = 3;
+
+    scoreText.textContent = score;
+    livesText.textContent = lives;
+
+    playerX = (game.clientWidth - player.offsetWidth) / 2;
+
+    player.style.left = playerX + "px";
+
+    // Xóa xu cu
+    coins.forEach(coin => coin.element.remove());
+    coins = [];
+
+    startScreen.style.display = "none";
+    gameOver.style.display = "none";
+
+    gameRunning = true;
+
+    clearInterval(coinTimer);
+    clearInterval(gameLoop);
+
+    coinTimer = setInterval(createCoin, 700);
+
+    gameLoop = setInterval(updateGame, 20);
+}
+
+
+// ===========================
+// T?O XU
+// ===========================
+
+function createCoin() {
+
+    if (!gameRunning) return;
+
+    const coin = document.createElement("div");
+
+    coin.className = "coin";
+    coin.textContent = "$";
+
+    const maxX = game.clientWidth - 30;
+
+    const x = Math.random() * maxX;
+
+    coin.style.left = x + "px";
+    coin.style.top = "-35px";
+
+    game.appendChild(coin);
+
+    coins.push({
+        element: coin,
+        x: x,
+        y: -35
+    });
+}
+
+
+// ===========================
+// C?P NH?T GAME
+// ===========================
+
+function updateGame() {
+
+    if (!gameRunning) return;
+
+    // Di chuy?n ngu?i choi
+
+    if (keys.left) {
+        playerX -= 7;
+    }
+
+    if (keys.right) {
+        playerX += 7;
+    }
+
+    const maxPlayerX = game.clientWidth - player.offsetWidth;
+
+    if (playerX < 0) {
+        playerX = 0;
+    }
+
+    if (playerX > maxPlayerX) {
+        playerX = maxPlayerX;
+    }
+
+    player.style.left = playerX + "px";
+
+
+    // Di chuy?n xu
+
+    for (let i = coins.length - 1; i >= 0; i--) {
+
+        const coin = coins[i];
+
+        coin.y += speed;
+
+        coin.element.style.top = coin.y + "px";
+
+
+        // Ki?m tra va ch?m
+
+        const playerLeft = playerX;
+        const playerRight = playerX + player.offsetWidth;
+
+        const playerTop =
+            game.clientHeight - player.offsetHeight - 15;
+
+        const playerBottom =
+            playerTop + player.offsetHeight;
+
+        const coinLeft = coin.x;
+        const coinRight = coin.x + 30;
+
+        const coinTop = coin.y;
+        const coinBottom = coin.y + 30;
+
+
+        const collision =
+            coinRight > playerLeft &&
+            coinLeft < playerRight &&
+            coinBottom > playerTop &&
+            coinTop < playerBottom;
+
+
+        if (collision) {
+
+            score++;
+
+            scoreText.textContent = score;
+
+            coin.element.remove();
+
+            coins.splice(i, 1);
+
+            // Tang d? khó
+
+            if (score % 10 === 0) {
+                speed += 0.5;
+            }
+
+            continue;
+        }
+
+
+        // Xu roi kh?i màn hình
+
+        if (coin.y > game.clientHeight) {
+
+            coin.element.remove();
+
+            coins.splice(i, 1);
+
+            loseLife();
+        }
+    }
+}
+
+
+// ===========================
+// M?T M?NG
+// ===========================
+
+function loseLife() {
+
+    lives--;
+
+    livesText.textContent = lives;
+
+    if (lives <= 0) {
+        endGame();
+    }
+}
+
+
+// ===========================
+// GAME OVER
+// ===========================
+
+function endGame() {
+
+    gameRunning = false;
+
+    clearInterval(coinTimer);
+    clearInterval(gameLoop);
+
+    finalScore.textContent = score;
+
+    gameOver.style.display = "flex";
+}
+
+
+// ===========================
+// BÀN PHÍM
+// ===========================
+
+document.addEventListener("keydown", function(event) {
+
+    if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
+        keys.left = true;
+    }
+
+    if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
+        keys.right = true;
+    }
+});
+
+
+document.addEventListener("keyup", function(event) {
+
+    if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
+        keys.left = false;
+    }
+
+    if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
+        keys.right = false;
+    }
+});
+
+
+// ===========================
+// NÚT ÐI?U KHI?N ÐI?N THO?I
+// ===========================
+
+leftBtn.addEventListener("pointerdown", function() {
+    keys.left = true;
+});
+
+leftBtn.addEventListener("pointerup", function() {
+    keys.left = false;
+});
+
+leftBtn.addEventListener("pointerleave", function() {
+    keys.left = false;
+});
+
+
+rightBtn.addEventListener("pointerdown", function() {
+    keys.right = true;
+});
+
+rightBtn.addEventListener("pointerup", function() {
+    keys.right = false;
+});
+
+rightBtn.addEventListener("pointerleave", function() {
+    keys.right = false;
+});
+
+
+// ===========================
+// NÚT START / RESTART
+// ===========================
+
+startBtn.addEventListener("click", startGame);
+
+restartBtn.addEventListener("click", startGame);
+
+</script>
+
+</body>
+</html>
